@@ -1,6 +1,6 @@
 import json
 
-with open('test_files/eu-members.json') as f:
+with open('test_files/eu_members.json') as f:
     d = json.load(f)
 
 out = open('test_files/eu-members.ttl', 'w')
