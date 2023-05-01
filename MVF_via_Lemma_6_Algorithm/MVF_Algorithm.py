@@ -1,3 +1,4 @@
+# Importing the libraries
 from collections import defaultdict
 
 '''
@@ -11,6 +12,17 @@ The following steps are implemented in this python script:
         4. for V^' ← V^* do
         5.	 wgt[V^']  ← null
         6. return maxWeight(G^*,scc(G,v), wgt)
+        // Auxiliary Function
+        7. Function maxWeight(G^*, V^',wgt):
+        8.  current  ← 0
+        9.  for W^' ∈ {U^'∈V^* | (V^',U^' )∈ E^*} do
+        10.     if wgt[W^'] = null then
+        11.         current  ← max(current, maxWeight(G^*, W^',wgt))
+        12.     else
+        13.         current  ← wgt[W^']
+        14.     wgt[V^']   current + |V^' |
+        15. return wgt[V^']
+
 '''
 
 
@@ -22,13 +34,14 @@ def tarjan(graph):
     on_stack = defaultdict(lambda: False)
     result = []
 
+    # Defining a helper function to perform depth-first search and identify strongly connected components
     def strongconnect(node, i):
         index[node] = i
         lowlink[node] = i
         i += 1
         stack.append(node)
         on_stack[node] = True
-
+        # Checking for each neighbor of the current node
         if node not in graph:
             graph[node] = []
 
@@ -52,10 +65,11 @@ def tarjan(graph):
         return i
 
     i = 0
+    # Performing the depth-first search for each node in the graph
     for node in list(graph):
         if index[node] is None:
             i = strongconnect(node, i)
-
+    # Returning the list of strongly connected components
     return result
 
 
@@ -92,6 +106,20 @@ def max_weight(graph, vertex, weights):
     return weights[vertex]
 
 
+# Function to compute the maximum vertex weight in a condensed graph
+def maxWeight(condensed, v, weights):
+    current = 0
+    for scc in condensed:
+        if (v, scc) in condensed:
+            w_scc = tuple(condensed[(v, scc)])
+            if weights[w_scc] is None:
+                current = max(current, maxWeight(condensed, w_scc, weights))
+            else:
+                current = weights[w_scc]
+            weights[scc] = current + len(scc)
+    return weights[scc]
+
+
 # Graph taken from example-product-0.ttl
 G = {
     'ex:x1': ['ex:M', 'ex:F'],
@@ -105,7 +133,7 @@ sccs = tarjan(G)
 condensed = condense(G, sccs)
 
 # Compute the maximum vertex weight for each strongly connected component
-v = 'ex:x1'
+v = 'ex:x2'
 weights = {}
 for scc in sccs:
     if v in scc:
@@ -113,10 +141,8 @@ for scc in sccs:
     else:
         weights[tuple(scc)] = None
 
-# Compute the maximum vertex weight for each strongly connected component
-for scc in sccs:
-    if weights[tuple(scc)] is None:
-        max_weight(condensed, tuple(scc), weights)
+maxWeight(condensed, tuple(sccs[sccs.index([v])]), weights)
 
 # Print the result
-print("MVF of v in G:", max(weights.values()))
+print("MVF of v in G:", max(filter(lambda x: x is not None, weights.values())))
+
