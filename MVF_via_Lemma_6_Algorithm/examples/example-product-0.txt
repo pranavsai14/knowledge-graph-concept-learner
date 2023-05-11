@@ -1,0 +1,24 @@
+{
+	'ex:x1': {
+		'ex:r1': 'ex:y1',
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': ['ex:M', 'ex:F'],
+		'ex:r2': 'ex:z1',
+	},
+	'ex:x2': {
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': ['ex:F', 'ex:M'],
+		'ex:r1': 'ex:y2',
+		'ex:r2': 'ex:z2',
+	},
+	'ex:y1': {
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': 'ex:A',
+	},
+	'ex:y2': {
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': 'ex:C',
+	},
+	'ex:z1': {
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': 'ex:B',
+	},
+	'ex:z2': {
+		'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': 'ex:D',
+	},
+}
