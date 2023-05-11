@@ -25,8 +25,8 @@ for key, value, data in graph:
         value = 'ex:' + value[len(ex):]
     if data.startswith(ex):
         data = 'ex:' + data[len(ex):]
-    if data.startswith(rdf):
-        data = 'rdf:' + data[len(rdf):]
+    if value.startswith(rdf):
+        value = 'rdf:' + value[len(rdf):]
 
     # Add the subject to the output graph if it hasn't been added yet
     if key not in G:
@@ -47,7 +47,7 @@ G = {keys: val for keys, val in sorted(G.items())}
 
 
 # Print the output graph using description graph and description tree
-def generate_output_graph(g):
+def generate_output_graph(G):
     output = "{\n"
 
     def unravel(d, depth=1):
@@ -63,7 +63,7 @@ def generate_output_graph(g):
                     value_str = "'" + value_str + "'"
                 output += '\t' * depth + "'" + k + "': " + value_str + ',\n'
 
-    unravel(g, depth=1)
+    unravel(G, depth=1)
 
     output += "}\n"
 
