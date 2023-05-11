@@ -1,5 +1,6 @@
 # Importing the libraries
 from collections import defaultdict
+from typing import Dict, List, Tuple
 
 '''
 The below code is a python script for Computing MVF algorithm via Lemma 6.
@@ -25,124 +26,142 @@ The following steps are implemented in this python script:
 
 '''
 
+# Read the file and assign the values to variable G
+file_path = 'C:/Users/prana/Desktop/Masters Thesis/MVF_via_Lemma_6_Algorithm/examples/example-product-1.txt'
 
-# Tarjan's algorithm to find strongly connected components in a graph
-def tarjan(graph):
-    index = defaultdict(lambda: None)
-    lowlink = defaultdict(lambda: None)
+with open(file_path, 'r') as file:
+    G = eval(file.read())
+
+
+def SCC(G: Dict[str, List[str]]) -> List[List[str]]:
+    """
+    Finds the strongly connected components in a graph using Tarjan's algorithm.
+
+    Args:
+        G: The input graph.
+
+    Returns:
+        A list of lists, where each inner list is a strongly connected component.
+    """
+    index = {}
+    lowlink = {}
     stack = []
-    on_stack = defaultdict(lambda: False)
     result = []
+    idx = [0]
 
-    # Defining a helper function to perform depth-first search and identify strongly connected components
-    def strongconnect(node, i):
-        index[node] = i
-        lowlink[node] = i
-        i += 1
-        stack.append(node)
-        on_stack[node] = True
-        # Checking for each neighbor of the current node
-        if node not in graph:
-            graph[node] = []
+    def visit(v):
+        index[v] = idx[0]
+        lowlink[v] = idx[0]
+        idx[0] += 1
+        stack.append(v)
 
-        for neighbor in graph[node]:
-            if index[neighbor] is None:
-                i = strongconnect(neighbor, i)
-                lowlink[node] = min(lowlink[node], lowlink[neighbor])
-            elif on_stack[neighbor]:
-                lowlink[node] = min(lowlink[node], index[neighbor])
+        for w in G.get(v, []):
+            if w not in index:
+                visit(w)
+                lowlink[v] = min(lowlink[v], lowlink[w])
+            elif w in stack:
+                lowlink[v] = min(lowlink[v], index[w])
 
-        if lowlink[node] == index[node]:
+        if lowlink[v] == index[v]:
             scc = []
             while True:
-                neighbor = stack.pop()
-                on_stack[neighbor] = False
-                scc.append(neighbor)
-                if neighbor == node:
+                w = stack.pop()
+                scc.append(w)
+                if w == v:
                     break
             result.append(scc)
 
-        return i
+    for v in G.keys():
+        if v not in index:
+            visit(v)
 
-    i = 0
-    # Performing the depth-first search for each node in the graph
-    for node in list(graph):
-        if index[node] is None:
-            i = strongconnect(node, i)
-    # Returning the list of strongly connected components
     return result
 
 
-# Function to create the condensed graph from a graph and its strongly connected components
-def condense(graph, sccs):
-    condensed = {}
-    graph_copy = graph.copy()  # create a copy of the graph dictionary
-    for scc in sccs:
-        scc_set = set(scc)
-        for node in scc:
-            neighbors = set(graph_copy[node]) if node in graph_copy else set()
-            for neighbor in neighbors:
-                if neighbor not in scc_set:
-                    if tuple(scc) not in condensed:
-                        condensed[tuple(scc)] = []
-                    condensed[tuple(scc)].append(tuple(set(graph_copy[node])))
-                    break
-        if tuple(scc) not in condensed:
-            condensed[tuple(scc)] = []
-    return condensed
+def condense(G: Dict[str, List[str]], sccs: List[List[str]]) -> Tuple[Dict[str, List[str]], Dict[str, List[str]]]:
+    """
+    Condenses a graph by collapsing strongly connected components into a single vertex.
+
+    Args:
+        G: The input graph.
+        sccs: The strongly connected components of the graph.
+
+    Returns:
+        A tuple containing the condensed graph and the mapping from original vertices to the new vertices.
+    """
+    cmap = {v: i for i, scc in enumerate(sccs) for v in scc}
+    cond = defaultdict(list)
+    for v, edges in G.items():
+        for w in edges:
+            if cmap[v] != cmap[w]:
+                cond[cmap[v]].append(cmap[w])
+    return dict(cond), cmap
 
 
-# Function to compute the maximum vertex weight in a graph
-def max_weight(graph, vertex, weights):
-    if weights[vertex] is not None:
-        return weights[vertex]
+def maxWeight(G: Dict[str, List[str]], v: str, wgt: Dict[str, int]) -> int:
+    """
+    Finds the maximum weight of a vertex in a directed graph.
 
-    weight = 0
-    for neighbor in graph[vertex]:
-        neighbor_weight = max_weight(graph, neighbor, weights)
-        weight = max(weight, neighbor_weight)
+    Args:
+        G: The input graph.
+        v: The starting vertex.
+        wgt: A dictionary mapping vertices to their weights.
 
-    weights[vertex] = weight + 1
-    return weights[vertex]
-
-
-# Function to compute the maximum vertex weight in a condensed graph
-def maxWeight(condensed, v, weights):
+    Returns:
+        The maximum weight of a vertex in the graph.
+    """
+    if wgt[v] is not None:
+        return wgt[v]
     current = 0
-    for scc in condensed:
-        if (v, scc) in condensed:
-            w_scc = tuple(condensed[(v, scc)])
-            if weights[w_scc] is None:
-                current = max(current, maxWeight(condensed, w_scc, weights))
-            else:
-                current = weights[w_scc]
-            weights[scc] = current + len(scc)
-    return weights[scc]
+    for w in G.get(v, []):
+        if wgt[w] is None:
+            current = max(current, maxWeight(G, w, wgt))
+        else:
+            current = max(current, wgt[w])
+    wgt[v] = current + len(G[v])
+    return wgt[v]
 
 
-# Graph taken from example-product-0.ttl
-G = {
-    'ex:x1': ['ex:M', 'ex:F'],
-    'ex:x2': ['ex:M']
-}
+# Algorithm implementation
+sccs = SCC(G)
+cond, cmap = condense(G, sccs)
+G_condensed = {i: [] for i in range(len(sccs))}
+for v, edges in cond.items():
+    for w in edges:
+        G_condensed[v].append(w)
 
-# Find the strongly connected components in the graph
-sccs = tarjan(G)
+wgt = {i: None for i in range(len(sccs))}
 
-# Create the condensed graph from the original graph and its strongly connected components
-condensed = condense(G, sccs)
 
-# Compute the maximum vertex weight for each strongly connected component
-v = 'ex:x2'
-weights = {}
-for scc in sccs:
-    if v in scc:
-        weights[tuple(scc)] = 1
-    else:
-        weights[tuple(scc)] = None
+v_scc1 = cmap['ex:x1']
+v_scc2 = cmap['ex:y1']
+v_scc3 = cmap['ex:z1']
+v_scc4 = cmap['ex:x2']
+v_scc5 = cmap['ex:y2']
+v_scc6 = cmap['ex:z2']
 
-maxWeight(condensed, tuple(sccs[sccs.index([v])]), weights)
+mvf1 = maxWeight(G_condensed, v_scc1, wgt)
+mvf2 = maxWeight(G_condensed, v_scc2, wgt)
+mvf3 = maxWeight(G_condensed, v_scc3, wgt)
+mvf4 = maxWeight(G_condensed, v_scc4, wgt)
+mvf5 = maxWeight(G_condensed, v_scc5, wgt)
+mvf6 = maxWeight(G_condensed, v_scc6, wgt)
 
-# Print the result
-print("MVF of v in G:", max(filter(lambda x: x is not None, weights.values())))
+print(f"The MVF of 'ex:x1' in G is {mvf1}")  # Output is 3
+print(f"The MVF of 'ex:y1' in G is {mvf2}")
+print(f"The MVF of 'ex:z1' in G is {mvf3}")
+print(f"The MVF of 'ex:x2' in G is {mvf4}")
+print(f"The MVF of 'ex:y2' in G is {mvf5}")
+print(f"The MVF of 'ex:z2' in G is {mvf6}")
 
+'''
+1. Explanation of why The MVF of 'ex:x1' in G is 3?
+
+In the given graph G, the MVF of 'ex:x1' is 3, as it has three edges connected to it 
+(i.e., 'rdf:type', 'ex:r1', and 'ex:r2').
+
+2. Explanation of why The MVF of 'ex:y1'/'ex:z1' in G is 1?
+
+In the given graph, the maximum vertex frequency of 'ex:y1' and 'ex:z1' would be 1, 
+as they are only referenced once as the object of the 'ex:r1' and 'ex:r2' properties of the vertex 'ex:x1'.
+'''
